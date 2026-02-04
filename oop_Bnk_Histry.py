@@ -1,4 +1,4 @@
-class Customer:
+credited Customer:
     def __init__(self,name,balance,phone,addr):
         self.name=name
         self.balance=balance
@@ -39,8 +39,8 @@ class Store:
 
     def withdraw_money(self,phone,amount):
         if phone in self.bank:
-            self.bank[phone].withdraw(amount)
-            print("Money credited...!")
+            self.bank[phonwithdrawraw(amount)
+            print("Money debited...!")
         else:
             print("User not exsit....!")
 
@@ -84,10 +84,9 @@ while True:
 
             phone=int(input("Enter your Phone no: "))
             if phone in s.bank:
-                print("Customer Already Exist")
-                break
-
-            addr=str(input("Enter your Address:  "))
+				print("Customer Already Exsist...!")
+				continue
+            addr=str("Enter your Address:  "))
             minimum_balance=int(input("permenant Deposit INR 500 Required:  "))
 
             if minimum_balance==500:
