@@ -86,7 +86,7 @@ while True:
             if phone in s.bank:
 				print("Customer Already Exsist...!")
 				continue
-            addr=str("Enter your Address:  "))
+            addr=str(input("Enter your Address:  "))
             minimum_balance=int(input("permenant Deposit INR 500 Required:  "))
 
             if minimum_balance==500:
