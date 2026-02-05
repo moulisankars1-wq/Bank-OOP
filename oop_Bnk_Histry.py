@@ -39,7 +39,7 @@ class Store:
 
     def withdraw_money(self,phone,amount):
         if phone in self.bank:
-            self.bank[phonwithdrawraw(amount)
+            self.bank[phone].withdraw(amount)
             print("Money debited...!")
         else:
             print("User not exsit....!")
