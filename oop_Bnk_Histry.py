@@ -1,148 +1,369 @@
-credited Customer:
-    def __init__(self,name,balance,phone,addr):
-        self.name=name
-        self.balance=balance
-        self.phone=phone
-        self.addr=addr
+from datetime import datetime
 
-    def deposit(self,amount):
-        self.balance+=amount
-        print(self.balance)
 
-    def withdraw(self,amount):
-        if self.balance>=amount:
-            self.balance-=amount
-            print(self.balance)
-        else:
-            print("insufficiant balance")
+class Customer:
+    MINIMUM_BALANCE = 500
 
-    def cash_check(self):
-        print(f"your current balance: ${self.balance}")
+    def __init__(self, name, balance, phone, address):
+        self.name = name
+        self.balance = balance
+        self.phone = phone
+        self.address = address
+        self.history = []
+
+        self._add_history(
+            "ACCOUNT_OPENED",
+            balance,
+            self.balance
+        )
+
+    def _add_history(self, transaction_type, amount, balance_after):
+        self.history.append({
+            "type": transaction_type,
+            "amount": amount,
+            "balance": balance_after,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+
+    def deposit(self, amount):
+        if amount <= 0:
+            return False, "Deposit amount must be greater than 0."
+
+        self.balance += amount
+
+        self._add_history(
+            "DEPOSIT",
+            amount,
+            self.balance
+        )
+
+        return True, f"₹{amount} deposited successfully."
+
+    def withdraw(self, amount):
+        if amount <= 0:
+            return False, "Withdrawal amount must be greater than 0."
+
+        if amount > self.balance:
+            return False, "Insufficient balance."
+
+        if self.balance - amount < self.MINIMUM_BALANCE:
+            return False, (
+                f"Minimum balance of ₹{self.MINIMUM_BALANCE} "
+                "must be maintained."
+            )
+
+        self.balance -= amount
+
+        self._add_history(
+            "WITHDRAW",
+            amount,
+            self.balance
+        )
+
+        return True, f"₹{amount} withdrawn successfully."
+
+    def show_balance(self):
+        print(f"\nCurrent Balance: ₹{self.balance}")
+
+    def show_details(self):
+        print("\n--------- CUSTOMER DETAILS ---------")
+        print(f"Name     : {self.name}")
+        print(f"Phone    : {self.phone}")
+        print(f"Address  : {self.address}")
+        print(f"Balance  : ₹{self.balance}")
+        print("------------------------------------")
+
+    def show_history(self):
+        if not self.history:
+            print("No transactions found.")
+            return
+
+        print("\n------------- TRANSACTION HISTORY -------------")
+
+        for transaction in self.history:
+            print(
+                f"{transaction['time']} | "
+                f"{transaction['type']:<15} | "
+                f"Amount: ₹{transaction['amount']:<8} | "
+                f"Balance: ₹{transaction['balance']}"
+            )
+
+        print("------------------------------------------------")
+
 
 class Store:
     def __init__(self):
-        self.bank={}
+        self.bank = {}
 
-    def add_member(self,name,balance,phone,addr):
+    def add_member(self, name, phone, address, initial_balance):
         if phone in self.bank:
-            print("Customer Exist..!")
-        else:
-            self.bank[phone]=Customer(name,balance,phone,addr)
-            print("Customer Added Successfully..!")
+            return False, "Customer already exists."
 
-    def add_Balance(self,phone,amount):
-        if phone in self.bank:
-            self.bank[phone].deposit(amount)
-            print("deposited Succesfully..!")
-        else:
-            print("User not exist...!")
+        if initial_balance != Customer.MINIMUM_BALANCE:
+            return False, (
+                f"Initial deposit must be exactly "
+                f"₹{Customer.MINIMUM_BALANCE}."
+            )
 
-    def withdraw_money(self,phone,amount):
-        if phone in self.bank:
-            self.bank[phone].withdraw(amount)
-            print("Money debited...!")
-        else:
-            print("User not exsit....!")
+        customer = Customer(
+            name,
+            initial_balance,
+            phone,
+            address
+        )
 
-    def show_Member(self,phone):
-        if phone in self.bank:
-            obj=self.bank[phone]
-            print("Name: ",obj.name)
-            print("Balance: ",obj.balance)
-            print("Phone: ",obj.phone)
-            print("Address: ",obj.addr)
-        else:
-            print("Member Not in list. so, kindly add member")
+        self.bank[phone] = customer
 
-s=Store()
-while True:
-    print("\n/////////////////")
-    print("-----------------")
-    print("MOULI BANKING SYS")
-    print("-----------------")
-    print("/////////////////\n")
+        return True, f"{name}'s account opened successfully."
 
-    print("A.Add Member")
-    print("B.Deposit Amount")
-    print("C.withdrw Amount")
-    print("D.Show Member")
-    print("E.Show History")
-    print("F.Exit")
+    def find_customer(self, phone):
+        return self.bank.get(phone)
+
+    def deposit_money(self, phone, amount):
+        customer = self.find_customer(phone)
+
+        if customer is None:
+            return False, "Customer does not exist."
+
+        return customer.deposit(amount)
+
+    def withdraw_money(self, phone, amount):
+        customer = self.find_customer(phone)
+
+        if customer is None:
+            return False, "Customer does not exist."
+
+        return customer.withdraw(amount)
+
+    def show_member(self, phone):
+        customer = self.find_customer(phone)
+
+        if customer is None:
+            print("Customer does not exist.")
+            return
+
+        customer.show_details()
+
+    def show_all_members(self):
+        if not self.bank:
+            print("No members found.")
+            return
+
+        print("\n============== ALL MEMBERS ==============")
+
+        for customer in self.bank.values():
+            print(
+                f"Name: {customer.name} | "
+                f"Phone: {customer.phone} | "
+                f"Balance: ₹{customer.balance}"
+            )
+
+        print("==========================================")
+
+    def show_history(self, phone):
+        customer = self.find_customer(phone)
+
+        if customer is None:
+            print("Customer does not exist.")
+            return
+
+        customer.show_history()
 
 
-    choice=input("Enter Option: ").upper()
-    print("-----------------------")
+def get_phone():
+    while True:
+        phone = input("Enter phone number: ").strip()
+
+        if not phone.isdigit():
+            print("Phone number must contain digits only.")
+            continue
+
+        if len(phone) != 10:
+            print("Phone number must contain exactly 10 digits.")
+            continue
+
+        return phone
 
 
+def get_amount():
+    while True:
+        amount = input("Enter amount: ").strip()
 
-    if choice=="A":
         try:
-            name=str(input("Enter your name:  "))
-            if not name.isalpha():
-                print("Enter letter only, your name contains unwanted informations")
+            amount = int(amount)
+
+            if amount <= 0:
+                print("Amount must be greater than 0.")
                 continue
 
-            phone=int(input("Enter your Phone no: "))
-            if phone in s.bank:
-				print("Customer Already Exsist...!")
-				continue
-            addr=str(input("Enter your Address:  "))
-            minimum_balance=int(input("permenant Deposit INR 500 Required:  "))
+            return amount
 
-            if minimum_balance==500:
-                s.add_member(name,minimum_balance,phone,addr)
-                print(f"{name} Acount Sucessfully Opened")
-            else:
-                print("Initialize depodit Amount Expected INR 500: ")
         except ValueError:
-            print("Please Enter valid Details")
+            print("Please enter a valid numeric amount.")
 
-    elif choice=="B":
-        try:
-            phone=int(input("Phone no: "))
-            if phone not in s.bank:
-                print("Customer Not Exist")
-                continue
-            amount=int(input("Amount: "))
-            s.add_Balance(phone,amount)
-        except ValueError:
-            print("Enter Existing Phone NO or Amount")
 
-    elif choice=="C":
-        try:
-            phone=int(input("Enter phone No: "))
-            if phone not in s.bank:
-                print("No customer from your Information")
-                continue
-            amount=int(input("Enter Amount: "))
-            s.withdraw_money(phone,amount)
-        except ValueError:
-            print("Enter Valid Phone No or Amount")
+def get_name():
+    while True:
+        name = input("Enter your name: ").strip()
 
-    elif choice=="D":
-        try:
-            phone=int(input("Enter phone No: "))
-            s.show_Member(phone)
-        except ValueError:
-            print("Enter Valid Phone Number")
+        if not name:
+            print("Name cannot be empty.")
+            continue
 
-    elif choice=="E":
-        if not  s.bank:
-            print("No Member Found...!")
+        if not name.replace(" ", "").isalpha():
+            print("Name must contain letters only.")
+            continue
+
+        return name
+
+
+def get_address():
+    while True:
+        address = input("Enter your address: ").strip()
+
+        if not address:
+            print("Address cannot be empty.")
+            continue
+
+        return address
+
+
+def add_member(store):
+    print("\n========== ADD MEMBER ==========")
+
+    name = get_name()
+    phone = get_phone()
+
+    if store.find_customer(phone):
+        print("Customer already exists.")
+        return
+
+    address = get_address()
+
+    print(
+        f"Initial deposit required: "
+        f"₹{Customer.MINIMUM_BALANCE}"
+    )
+
+    initial_balance = get_amount()
+
+    success, message = store.add_member(
+        name,
+        phone,
+        address,
+        initial_balance
+    )
+
+    print(message)
+
+
+def deposit_money(store):
+    print("\n========== DEPOSIT ==========")
+
+    phone = get_phone()
+
+    if store.find_customer(phone) is None:
+        print("Customer does not exist.")
+        return
+
+    amount = get_amount()
+
+    success, message = store.deposit_money(
+        phone,
+        amount
+    )
+
+    print(message)
+
+    if success:
+        customer = store.find_customer(phone)
+        print(f"New balance: ₹{customer.balance}")
+
+
+def withdraw_money(store):
+    print("\n========== WITHDRAW ==========")
+
+    phone = get_phone()
+
+    if store.find_customer(phone) is None:
+        print("Customer does not exist.")
+        return
+
+    amount = get_amount()
+
+    success, message = store.withdraw_money(
+        phone,
+        amount
+    )
+
+    print(message)
+
+    if success:
+        customer = store.find_customer(phone)
+        print(f"New balance: ₹{customer.balance}")
+
+
+def show_member(store):
+    print("\n========== SHOW MEMBER ==========")
+
+    phone = get_phone()
+    store.show_member(phone)
+
+
+def show_history(store):
+    print("\n========== TRANSACTION HISTORY ==========")
+
+    phone = get_phone()
+    store.show_history(phone)
+
+
+def main():
+    store = Store()
+
+    while True:
+        print("\n")
+        print("======================================")
+        print("        MOULI BANKING SYSTEM")
+        print("======================================")
+        print("A. Add Member")
+        print("B. Deposit Amount")
+        print("C. Withdraw Amount")
+        print("D. Show Member")
+        print("E. Show Transaction History")
+        print("F. Show All Members")
+        print("G. Exit")
+        print("======================================")
+
+        choice = input("Enter option: ").strip().upper()
+
+        if choice == "A":
+            add_member(store)
+
+        elif choice == "B":
+            deposit_money(store)
+
+        elif choice == "C":
+            withdraw_money(store)
+
+        elif choice == "D":
+            show_member(store)
+
+        elif choice == "E":
+            show_history(store)
+
+        elif choice == "F":
+            store.show_all_members()
+
+        elif choice == "G":
+            print("\nThank you for using Mouli Banking System!")
+            break
+
         else:
-            for phone,obj in s.bank.items():
-                print("Name:    ",obj.name)
-                print("Balance: ",obj.balance)
-                print("Phone:   ",obj.phone)
-                print("Address: ",obj.addr)
-                print("-------------------------")
+            print(
+                "Invalid option. "
+                "Please choose A, B, C, D, E, F, or G."
+            )
 
 
-    elif choice=="F":
-        exit()
-
-    else:
-        print("Please Choose valid Option[A/B/C/D/E/F]\nNOTE: Dont Write Senternces")
-
-
-
+if __name__ == "__main__":
+    main()
